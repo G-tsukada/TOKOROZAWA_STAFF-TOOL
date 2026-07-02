@@ -26,7 +26,7 @@ export function PaneProgress() {
   const {
     selectedStaffId, selectedMonth, tasks, performance,
     staff, updateTask, updateAdvice, isManagerMode, setManagerMode,
-    upsertPerformance, loadMonthData, clearStaffData,
+    upsertPerformance, setSelectedMonth, clearStaffData,
   } = useAppStore()
 
   const [pinInput, setPinInput] = useState("")
@@ -143,13 +143,13 @@ export function PaneProgress() {
             })
           })
       )
-      // 全保存完了後に DB から再取得して表示に確実に反映させる
-      await loadMonthData(ym)
     } finally {
       setIsApplying(false)
     }
     setImportDialogOpen(false)
     setPdfRows(null)
+    // 表示月をインポート月に切り替え（内部で loadMonthData が走り Pane3 に反映される）
+    setSelectedMonth(ym)
   }
 
   // CSV 適用：接客件数・目標を登録（売上は既存値を保持）
@@ -692,6 +692,11 @@ export function PaneProgress() {
               {!importYearMonth && (
                 <p className="text-xs text-amber-600 bg-amber-50 rounded px-2 py-1.5">
                   対象月を PDF から読み取れませんでした。適用する年月を入力してください。
+                </p>
+              )}
+              {(importYearMonth ?? manualYearMonth) && (importYearMonth ?? manualYearMonth) !== selectedMonth && (
+                <p className="text-xs text-blue-600 bg-blue-50 rounded px-2 py-1.5">
+                  適用後、表示月が <span className="font-semibold">{importYearMonth ?? manualYearMonth}</span> に切り替わります。
                 </p>
               )}
               <p className="text-xs text-muted-foreground">
