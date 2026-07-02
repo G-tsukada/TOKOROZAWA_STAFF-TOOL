@@ -14,7 +14,7 @@ import { parseSalesPdf, StaffSalesRow } from "@/lib/pdf-parser"
 import { parseCustomerCsv, CustomerCountRow } from "@/lib/csv-parser"
 import { parseTextInput } from "@/lib/text-parser"
 import { cn } from "@/lib/utils"
-import { Lock, ChevronDown, Pencil, Plus, Trash2, Check, X, Upload, FileText, AlertCircle, ClipboardPaste } from "lucide-react"
+import { Lock, ChevronDown, Pencil, Plus, Trash2, Check, X, Upload, FileText, AlertCircle, ClipboardPaste, Eraser } from "lucide-react"
 
 const MANAGER_PIN = "1234"
 
@@ -26,13 +26,15 @@ export function PaneProgress() {
   const {
     selectedStaffId, selectedMonth, tasks, performance,
     staff, updateTask, updateAdvice, isManagerMode, setManagerMode,
-    upsertPerformance,
+    upsertPerformance, loadMonthData, clearStaffData,
   } = useAppStore()
 
   const [pinInput, setPinInput] = useState("")
   const [pinError, setPinError] = useState(false)
   const [pinDialogOpen, setPinDialogOpen] = useState(false)
   const [editPerfOpen, setEditPerfOpen] = useState(false)
+  const [clearConfirmOpen, setClearConfirmOpen] = useState(false)
+  const [isClearing, setIsClearing] = useState(false)
 
   // ── テキスト貼り付けダイアログ ──
   const [pasteDialogOpen, setPasteDialogOpen] = useState(false)
@@ -117,23 +119,34 @@ export function PaneProgress() {
   )
 
   // PDF 適用：受注実績・目標を登録（接客件数は既存値を保持）
-  const handlePdfApply = () => {
+  const [isApplying, setIsApplying] = useState(false)
+  const handlePdfApply = async () => {
     const ym = importYearMonth ?? manualYearMonth
     if (!pdfRows || !ym) return
-    for (const row of pdfRows) {
-      if (!selectedPdfRows.has(row.rawName) || !row.matchedStaffId) continue
-      const existing = performance.find(
-        (p) => p.staffId === row.matchedStaffId && p.yearMonth === ym
+    setIsApplying(true)
+    try {
+      await Promise.all(
+        pdfRows
+          .filter((row) => selectedPdfRows.has(row.rawName) && row.matchedStaffId)
+          .map((row) => {
+            const existing = performance.find(
+              (p) => p.staffId === row.matchedStaffId && p.yearMonth === ym
+            )
+            return upsertPerformance({
+              staffId: row.matchedStaffId!,
+              yearMonth: ym,
+              sales: row.actual,
+              target: row.target,
+              customerCount: existing?.customerCount ?? 0,
+              customerTarget: existing?.customerTarget ?? 0,
+              categoryMetrics: existing?.categoryMetrics ?? {},
+            })
+          })
       )
-      upsertPerformance({
-        staffId: row.matchedStaffId,
-        yearMonth: ym,
-        sales: row.actual,
-        target: row.target,
-        customerCount: existing?.customerCount ?? 0,
-        customerTarget: existing?.customerTarget ?? 0,
-        categoryMetrics: existing?.categoryMetrics ?? {},
-      })
+      // 全保存完了後に DB から再取得して表示に確実に反映させる
+      await loadMonthData(ym)
+    } finally {
+      setIsApplying(false)
     }
     setImportDialogOpen(false)
     setPdfRows(null)
@@ -200,6 +213,17 @@ export function PaneProgress() {
       setPinError(false)
     } else {
       setPinError(true)
+    }
+  }
+
+  const handleClearStaffData = async () => {
+    if (!selectedStaffId) return
+    setIsClearing(true)
+    try {
+      await clearStaffData(selectedStaffId, selectedMonth)
+    } finally {
+      setIsClearing(false)
+      setClearConfirmOpen(false)
     }
   }
 
@@ -478,9 +502,65 @@ export function PaneProgress() {
                 マネージャーモードを終了
               </Button>
             )}
-          </section></>}
+          </section>
+
+          {/* ── 一括消去ボタン（右下） ── */}
+          <div className="flex justify-end pt-2 pb-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 text-[11px] gap-1.5 text-muted-foreground/60 hover:text-destructive hover:bg-destructive/10"
+              onClick={() => setClearConfirmOpen(true)}
+            >
+              <Eraser className="h-3.5 w-3.5" />
+              {selectedMonth} のデータを消去
+            </Button>
+          </div>
+          </>}
         </div>
       </ScrollArea>
+
+      {/* ── 一括消去 確認ダイアログ ── */}
+      <Dialog open={clearConfirmOpen} onOpenChange={setClearConfirmOpen}>
+        <DialogContent className="max-w-xs">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <Eraser className="h-4 w-4" />
+              データを消去しますか？
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              <span className="font-semibold text-foreground">{selectedStaff?.name}</span> の{" "}
+              <span className="font-semibold text-foreground">{selectedMonth}</span>{" "}
+              の実績・タスクをすべて削除します。この操作は元に戻せません。
+            </p>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex-1"
+                onClick={() => setClearConfirmOpen(false)}
+              >
+                キャンセル
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                className="flex-1"
+                disabled={isClearing}
+                onClick={handleClearStaffData}
+              >
+                {isClearing ? (
+                  <span className="animate-pulse">消去中...</span>
+                ) : (
+                  <><Trash2 className="h-3.5 w-3.5 mr-1" />消去する</>
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* ── PIN入力ダイアログ ── */}
       <Dialog open={pinDialogOpen} onOpenChange={setPinDialogOpen}>
@@ -667,11 +747,14 @@ export function PaneProgress() {
                 <Button
                   size="sm"
                   className="flex-1"
-                  disabled={selectedPdfRows.size === 0 || !(importYearMonth ?? manualYearMonth)}
+                  disabled={selectedPdfRows.size === 0 || !(importYearMonth ?? manualYearMonth) || isApplying}
                   onClick={handlePdfApply}
                 >
-                  <Check className="h-3.5 w-3.5 mr-1" />
-                  {selectedPdfRows.size} 件を適用
+                  {isApplying ? (
+                    <span className="animate-pulse">保存中...</span>
+                  ) : (
+                    <><Check className="h-3.5 w-3.5 mr-1" />{selectedPdfRows.size} 件を適用</>
+                  )}
                 </Button>
               </div>
             </div>
