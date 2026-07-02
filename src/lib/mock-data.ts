@@ -1,4 +1,4 @@
-export type Team = "FN" | "IA"
+export type Team = "FN" | "IA" | "MGR"
 export type TaskStatus = "not_started" | "in_progress" | "completed" | "stalled"
 
 export interface Category {
@@ -21,6 +21,8 @@ export interface Task {
   status: TaskStatus
   memo: string
   advice: string
+  createdDate: string   // "YYYY-MM-DD"
+  dueDate: string       // "YYYY-MM-DD"（未設定は空文字）
 }
 
 export interface CategoryMetricItem {
@@ -61,6 +63,7 @@ export const CATEGORIES: Category[] = [
 ]
 
 export const STAFF: Staff[] = [
+  { id: "mgr1", name: "塚田 岳人", team: "MGR", categories: [] },
   { id: "s1", name: "勅使川原 純", team: "FN", categories: [] },
   { id: "s2", name: "鈴木 さおり", team: "FN", categories: ["TEX"] },
   { id: "s3", name: "吉川 夏子", team: "FN", categories: ["DSB"] },
@@ -78,31 +81,36 @@ export const TASKS: Task[] = [
     id: "t1", staffId: "s6", yearMonth: "2026-07",
     title: "入口にVP商品POPを設置", status: "stalled",
     memo: "2週間未着手。他業務が重なり後回しになっている",
-    advice: "まず入口正面の1点だけから始める。水曜閉店後10分で設置できる量から"
+    advice: "まず入口正面の1点だけから始める。水曜閉店後10分で設置できる量から",
+    createdDate: "2026-07-01", dueDate: "2026-07-20",
   },
   {
     id: "t2", staffId: "s6", yearMonth: "2026-07",
     title: "月曜朝会でVP売れ筋TOP3を報告", status: "in_progress",
     memo: "先週から開始。準備に10分かかっている",
-    advice: ""
+    advice: "",
+    createdDate: "2026-07-07", dueDate: "",
   },
   {
     id: "t3", staffId: "s4", yearMonth: "2026-07",
     title: "CULTIディスプレイ更新", status: "completed",
     memo: "7/10完了。売上前週比+15%",
-    advice: ""
+    advice: "",
+    createdDate: "2026-07-01", dueDate: "2026-07-10",
   },
   {
     id: "t4", staffId: "s4", yearMonth: "2026-07",
     title: "グリーンコーナー植物管理マニュアル作成", status: "not_started",
     memo: "",
-    advice: ""
+    advice: "",
+    createdDate: "2026-07-01", dueDate: "2026-07-31",
   },
   {
     id: "t5", staffId: "s2", yearMonth: "2026-07",
     title: "TEXサンプル展示見直し", status: "in_progress",
     memo: "棚の配置変更中",
-    advice: ""
+    advice: "",
+    createdDate: "2026-07-05", dueDate: "",
   },
 ]
 
