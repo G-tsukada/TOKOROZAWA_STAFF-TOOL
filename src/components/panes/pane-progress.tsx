@@ -244,7 +244,7 @@ export function PaneProgress() {
           {/* ── 通常スタッフビュー ── */}
           {!isManager && <><section>
             <div className="flex items-center justify-between mb-2">
-              <SectionLabel>実績サマリー — {selectedStaff?.name}</SectionLabel>
+              <SectionLabel className="text-performance">実績サマリー — {selectedStaff?.name}</SectionLabel>
               <Button
                 variant="ghost"
                 size="sm"
@@ -257,13 +257,13 @@ export function PaneProgress() {
             </div>
 
             {perf ? (
-              <div className="rounded-lg border bg-card p-3 space-y-3">
+              <div className="rounded-lg border border-l-2 border-l-performance bg-card p-3 space-y-3">
 
                 {/* 個人実績 */}
                 <div>
                   <div className="flex items-baseline justify-between mb-1.5">
-                    <p className="text-[10px] font-semibold text-muted-foreground">個人実績</p>
-                    <p className="text-[9px] text-muted-foreground">単位：千円</p>
+                    <p className="text-[9px] font-light text-muted-foreground uppercase tracking-[0.15em]">個人実績</p>
+                    <p className="text-[9px] font-light text-muted-foreground">単位：千円</p>
                   </div>
                   <div className="grid grid-cols-4 gap-1.5 text-center">
                     <Metric label="予算" value={formatSen(perf.target)} />
@@ -287,7 +287,7 @@ export function PaneProgress() {
 
                 {/* 接客件数 */}
                 <div>
-                  <p className="text-[10px] font-semibold text-muted-foreground mb-1.5">接客件数</p>
+                  <p className="text-[9px] font-light text-muted-foreground uppercase tracking-[0.15em] mb-1.5">接客件数</p>
                   <div className="grid grid-cols-4 gap-1.5 text-center">
                     <Metric label="予算" value={`${perf.customerTarget}件`} />
                     <Metric label="実績" value={`${perf.customerCount}件`} />
@@ -312,8 +312,8 @@ export function PaneProgress() {
                     <Separator />
                     <div>
                       <div className="flex items-baseline justify-between mb-2">
-                        <p className="text-[10px] font-semibold text-muted-foreground">カテゴリ実績</p>
-                        <p className="text-[9px] text-muted-foreground">単位：千円</p>
+                        <p className="text-[9px] font-light text-muted-foreground uppercase tracking-[0.15em]">カテゴリ実績</p>
+                        <p className="text-[9px] font-light text-muted-foreground">単位：千円</p>
                       </div>
                       <div className="space-y-3">
                         {Object.entries(perf.categoryMetrics).map(([k, item]) => {
@@ -321,7 +321,7 @@ export function PaneProgress() {
                           const diff = item.actual - item.budget
                           return (
                             <div key={k}>
-                              <p className="text-[10px] text-muted-foreground mb-1">{k}</p>
+                              <p className="text-[9px] font-light text-muted-foreground tracking-[0.1em] mb-1">{k}</p>
                               <div className="grid grid-cols-4 gap-1.5 text-center">
                                 <Metric label="予算" value={formatSen(item.budget)} />
                                 <Metric label="実績" value={formatSen(item.actual)} />
@@ -373,7 +373,7 @@ export function PaneProgress() {
                   <div key={task.id} className="rounded-lg border bg-card p-3 space-y-2">
                     <div className="flex items-start gap-2">
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium leading-snug">{task.title}</p>
+                        <p className="text-sm font-normal leading-snug">{task.title}</p>
                         {task.dueDate && (
                           <p className="text-[10px] text-muted-foreground mt-0.5">
                             完了予定: {task.dueDate}
@@ -714,10 +714,10 @@ function PerfEditDialog({
           {/* 個人実績 */}
           <div className="space-y-2">
             <div className="flex items-baseline justify-between">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+              <p className="text-[9px] font-light text-muted-foreground uppercase tracking-[0.15em]">
                 個人実績
               </p>
-              <p className="text-[10px] text-muted-foreground">単位：円</p>
+              <p className="text-[9px] font-light text-muted-foreground">単位：円</p>
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div>
@@ -755,7 +755,7 @@ function PerfEditDialog({
 
           {/* 接客件数 */}
           <div className="space-y-2">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+            <p className="text-[9px] font-light text-muted-foreground uppercase tracking-[0.15em]">
               接客件数
             </p>
             <div className="grid grid-cols-2 gap-2">
@@ -786,10 +786,10 @@ function PerfEditDialog({
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                <p className="text-[9px] font-light text-muted-foreground uppercase tracking-[0.15em]">
                   カテゴリ実績
                 </p>
-                <p className="text-[10px] text-muted-foreground">単位：円</p>
+                <p className="text-[9px] font-light text-muted-foreground">単位：円</p>
               </div>
               <Button variant="ghost" size="sm" className="h-6 text-xs gap-1" onClick={addRow}>
                 <Plus className="h-3 w-3" /> 項目追加
@@ -870,7 +870,7 @@ function PerfEditDialog({
 // ── 小コンポーネント ──────────────────────────────────
 function SectionLabel({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
-    <p className={cn("text-xs font-semibold text-muted-foreground uppercase tracking-wide", className)}>
+    <p className={cn("text-[9px] font-light text-muted-foreground uppercase tracking-[0.18em]", className)}>
       {children}
     </p>
   )
@@ -881,11 +881,11 @@ function Metric({ label, value, highlight, warn }: {
 }) {
   return (
     <div>
-      <p className="text-[10px] text-muted-foreground">{label}</p>
+      <p className="text-[9px] font-light text-muted-foreground tracking-[0.1em]">{label}</p>
       <p className={cn(
-        "text-lg font-bold",
-        highlight && "text-green-600",
-        warn && "text-red-500"
+        "text-xl font-bold tracking-tight",
+        highlight && "text-performance",
+        warn && "text-destructive"
       )}>
         {value}
       </p>
@@ -1029,10 +1029,10 @@ function GanttSection({
               <div className="flex px-2 py-2 hover:bg-muted/20 transition-colors">
                 {/* スタッフ名列 */}
                 <div className="w-20 shrink-0 pr-2">
-                  <p className="text-[10px] font-semibold leading-tight truncate">
+                  <p className="text-[10px] font-normal leading-tight truncate">
                     {staff.name.split(" ")[0]}
                   </p>
-                  <p className="text-[9px] text-muted-foreground">{staff.team}</p>
+                  <p className="text-[9px] font-light text-muted-foreground tracking-[0.1em]">{staff.team}</p>
                 </div>
 
                 {/* タスクバー列 */}

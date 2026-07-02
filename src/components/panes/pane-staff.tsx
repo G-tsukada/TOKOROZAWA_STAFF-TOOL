@@ -34,7 +34,7 @@ function Section({
 }) {
   return (
     <div>
-      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2 px-1">
+      <p className="text-[9px] font-light text-muted-foreground uppercase tracking-[0.18em] mb-2 px-1">
         {label}
       </p>
       <div className="space-y-1">
@@ -43,20 +43,20 @@ function Section({
             key={s.id}
             onClick={() => onSelect(s.id)}
             className={cn(
-              "w-full text-left rounded-lg px-3 py-2.5 transition-colors",
+              "w-full text-left rounded-lg px-3 py-2.5 transition-colors border-l-2",
               selectedId === s.id
-                ? "bg-primary text-primary-foreground"
-                : "hover:bg-accent"
+                ? "bg-performance/12 border-l-performance text-foreground"
+                : "border-l-transparent hover:bg-accent"
             )}
           >
-            <p className="text-sm font-medium leading-none">{s.name}</p>
+            <p className="text-sm font-normal leading-none">{s.name}</p>
             <div className="flex flex-wrap gap-1 mt-1.5">
               {isManager ? (
                 <Badge
                   variant="secondary"
                   className={cn(
                     "text-[10px] px-1.5 py-0",
-                    selectedId === s.id && "bg-primary-foreground/20 text-primary-foreground"
+                    selectedId === s.id && "bg-performance/20 text-performance"
                   )}
                 >
                   店長
@@ -70,7 +70,7 @@ function Section({
                     variant="secondary"
                     className={cn(
                       "text-[10px] px-1.5 py-0",
-                      selectedId === s.id && "bg-primary-foreground/20 text-primary-foreground"
+                      selectedId === s.id && "bg-performance/20 text-performance"
                     )}
                   >
                     {c}

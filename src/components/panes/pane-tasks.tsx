@@ -99,8 +99,8 @@ export function PaneTasks() {
     <div className="h-full flex flex-col">
       {/* 追加フォーム */}
       <div className="p-3 border-b space-y-2">
-        <p className="text-xs font-semibold text-muted-foreground">
-          {selectedStaff?.name} のタスク
+        <p className="text-[9px] font-light text-muted-foreground uppercase tracking-[0.18em]">
+          {selectedStaff?.name}
         </p>
         <div className="flex gap-2">
           <Input
@@ -253,7 +253,7 @@ function TaskCard({
   return (
     <div className="flex items-start gap-2 rounded-lg border p-2.5 bg-card">
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium leading-snug">{task.title}</p>
+        <p className="text-sm font-normal leading-snug">{task.title}</p>
         <div className="flex flex-wrap items-center gap-2 mt-1.5">
           <Badge
             className={cn("text-[10px] px-1.5 py-0", STATUS_COLOR[task.status as TaskStatus])}
@@ -267,7 +267,7 @@ function TaskCard({
         {linkedLogCount > 0 && (
           <div className="flex items-center gap-1 mt-1.5 rounded-md bg-primary/5 px-1.5 py-0.5 w-fit">
             <MessageSquare className="h-2.5 w-2.5 text-primary/70" />
-            <span className="text-[10px] text-primary font-medium">
+            <span className="text-[10px] text-primary font-bold">
               MTG {linkedLogCount}件
             </span>
             <span className="text-[10px] text-muted-foreground">

@@ -26,8 +26,8 @@ export default function Home() {
     <div className="h-dvh flex flex-col bg-background">
       {/* ヘッダー */}
       <header className="border-b px-4 py-2 flex items-center gap-4 shrink-0">
-        <h1 className="text-sm font-bold tracking-tight text-foreground">
-          アクタス所沢 スタッフ管理
+        <h1 className="text-xs font-light tracking-[0.2em] uppercase text-foreground">
+          Actus Tokorozawa
         </h1>
         <Separator orientation="vertical" className="h-5" />
         <MonthSelector />
@@ -116,9 +116,9 @@ export default function Home() {
 
 function PaneHeader({ label, icon }: { label: string; icon: React.ReactNode }) {
   return (
-    <div className="flex items-center gap-1.5 px-3 py-2 border-b bg-muted/30 shrink-0">
-      <span className="text-muted-foreground">{icon}</span>
-      <span className="text-xs font-semibold text-muted-foreground">{label}</span>
+    <div className="flex items-center gap-2 px-3 py-2.5 border-b bg-muted/20 shrink-0">
+      <span className="text-muted-foreground/60">{icon}</span>
+      <span className="text-[10px] font-light tracking-[0.18em] uppercase text-muted-foreground">{label}</span>
     </div>
   )
 }
