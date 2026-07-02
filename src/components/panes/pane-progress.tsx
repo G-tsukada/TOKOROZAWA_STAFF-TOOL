@@ -143,13 +143,15 @@ export function PaneProgress() {
             })
           })
       )
+      // 表示月をインポート月に切り替え（内部で loadMonthData が走り Pane3 に反映される）
+      setSelectedMonth(ym)
+    } catch (e) {
+      console.error("PDF apply failed:", e)
     } finally {
       setIsApplying(false)
+      setImportDialogOpen(false)
+      setPdfRows(null)
     }
-    setImportDialogOpen(false)
-    setPdfRows(null)
-    // 表示月をインポート月に切り替え（内部で loadMonthData が走り Pane3 に反映される）
-    setSelectedMonth(ym)
   }
 
   // CSV 適用：接客件数・目標を登録（売上は既存値を保持）

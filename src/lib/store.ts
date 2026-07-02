@@ -162,6 +162,10 @@ export const useAppStore = create<AppState>((set, get) => ({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(record),
     })
+    if (!res.ok) {
+      const text = await res.text()
+      throw new Error(`upsertPerformance failed: ${res.status} ${text.slice(0, 200)}`)
+    }
     const saved: PerformanceRecord = await res.json()
     set((s) => {
       const exists = s.performance.some(
