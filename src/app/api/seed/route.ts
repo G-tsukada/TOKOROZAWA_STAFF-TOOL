@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { Prisma } from "@/generated/prisma/client"
 import { TASKS, PERFORMANCE, MTG_LOGS } from "@/lib/mock-data"
 
 // POST /api/seed — モックデータを DB に一度だけ投入する
@@ -33,7 +34,7 @@ export async function POST() {
         target: p.target,
         customerCount: p.customerCount,
         customerTarget: p.customerTarget,
-        categoryMetrics: p.categoryMetrics,
+        categoryMetrics: p.categoryMetrics as unknown as Prisma.InputJsonValue,
       })),
       skipDuplicates: true,
     }),
