@@ -35,7 +35,7 @@ export default function Home() {
 
       {/* PC: 4ペイン リサイザブル（md以上） */}
       <div className="hidden md:flex flex-1 min-h-0 overflow-hidden">
-        <PanelGroup direction="horizontal" className="flex-1">
+        <PanelGroup orientation="horizontal" className="flex-1">
           {/* Pane1 — warm deep gray */}
           <Panel defaultSize={15} minSize={8}>
             <div className="flex flex-col h-full min-h-0" style={{ background: "oklch(0.930 0.013 72)" }}>
