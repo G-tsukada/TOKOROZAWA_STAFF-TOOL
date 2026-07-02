@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server"
 const AUTH_COOKIE = "actus_auth"
 const PUBLIC_PATHS = ["/login", "/api/auth"]
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // ログイン・認証APIは素通し
