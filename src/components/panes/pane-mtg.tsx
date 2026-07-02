@@ -79,8 +79,8 @@ export function PaneMtg() {
   return (
     <div className="h-full flex flex-col">
       <div className="p-3 border-b flex items-center justify-between">
-        <p className="text-xs font-semibold text-muted-foreground">
-          MTG ログ — {selectedStaff?.name}
+        <p className="text-[9px] font-light text-muted-foreground uppercase tracking-[0.18em]">
+          MTG — {selectedStaff?.name}
         </p>
         <Button size="sm" className="h-7 text-xs gap-1" onClick={() => setAddOpen(true)}>
           <Plus className="h-3.5 w-3.5" /> 追加
@@ -123,7 +123,7 @@ export function PaneMtg() {
                   {/* ── 本文 ── */}
                   <div className="px-3 pt-3 pb-2 space-y-1.5">
                     {titleLine && (
-                      <p className="text-sm font-semibold leading-snug">{titleLine}</p>
+                      <p className="text-sm font-normal leading-snug">{titleLine}</p>
                     )}
                     {bodyText && (
                       <p className="text-xs leading-relaxed whitespace-pre-wrap text-muted-foreground">
@@ -138,11 +138,11 @@ export function PaneMtg() {
                       {/* セクションヘッダー */}
                       <div className="flex items-center gap-1.5 px-2.5 py-1.5 border-b border-primary/20 bg-primary/5">
                         <Link2 className="h-3 w-3 text-primary" />
-                        <span className="text-[10px] font-semibold text-primary uppercase tracking-wide">
+                        <span className="text-[9px] font-light text-primary uppercase tracking-[0.15em]">
                           関連タスク
                         </span>
-                        <span className="text-[10px] text-primary/60 ml-auto">
-                          {relatedTasks.length} 件
+                        <span className="text-[10px] font-bold text-primary/70 ml-auto">
+                          {relatedTasks.length}
                         </span>
                       </div>
                       {/* タスクリスト */}
@@ -162,7 +162,7 @@ export function PaneMtg() {
                                 {STATUS_ICON[status]}
                               </span>
                               <div className="flex-1 min-w-0">
-                                <p className="text-xs font-medium leading-snug">{t.title}</p>
+                                <p className="text-xs font-normal leading-snug">{t.title}</p>
                                 <div className="flex flex-wrap items-center gap-2 mt-1">
                                   <Badge
                                     variant="secondary"
@@ -199,7 +199,7 @@ export function PaneMtg() {
           </DialogHeader>
           <div className="space-y-3">
             <div>
-              <label className="text-xs font-medium">カテゴリ</label>
+              <label className="text-[9px] font-light text-muted-foreground uppercase tracking-[0.15em]">カテゴリ</label>
               <select
                 className="mt-1 w-full border rounded-md px-3 py-1.5 text-sm bg-background"
                 value={form.categoryId}
@@ -212,7 +212,7 @@ export function PaneMtg() {
               </select>
             </div>
             <div>
-              <label className="text-xs font-medium">日付</label>
+              <label className="text-[9px] font-light text-muted-foreground uppercase tracking-[0.15em]">日付</label>
               <Input
                 type="date"
                 className="mt-1 text-sm"
@@ -221,7 +221,7 @@ export function PaneMtg() {
               />
             </div>
             <div>
-              <label className="text-xs font-medium">内容（Geminiで要約したテキストを貼り付け）</label>
+              <label className="text-[9px] font-light text-muted-foreground uppercase tracking-[0.15em]">内容</label>
               <Textarea
                 className="mt-1 text-sm min-h-[120px]"
                 placeholder="MTGの要約を貼り付けてください..."
@@ -231,7 +231,7 @@ export function PaneMtg() {
             </div>
             {staffTasks.length > 0 && (
               <div>
-                <label className="text-xs font-medium">関連タスク（任意）</label>
+                <label className="text-[9px] font-light text-muted-foreground uppercase tracking-[0.15em]">関連タスク（任意）</label>
                 <div className="mt-1 space-y-1.5 rounded-lg border p-2 bg-muted/30">
                   {staffTasks.map((t) => {
                     const checked = form.relatedTaskIds.includes(t.id)
