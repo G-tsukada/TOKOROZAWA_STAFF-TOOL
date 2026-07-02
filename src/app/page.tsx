@@ -36,9 +36,9 @@ export default function Home() {
       {/* PC: 4ペイン リサイザブル（md以上） */}
       <div className="hidden md:flex flex-1 min-h-0 overflow-hidden">
         <PanelGroup direction="horizontal" className="flex-1">
-          {/* Pane1 */}
+          {/* Pane1 — warm deep gray */}
           <Panel defaultSize={15} minSize={8}>
-            <div className="flex flex-col h-full min-h-0">
+            <div className="flex flex-col h-full min-h-0" style={{ background: "oklch(0.930 0.013 72)" }}>
               <PaneHeader label="スタッフ" icon={<Users className="h-3.5 w-3.5" />} />
               <div className="flex-1 min-h-0 overflow-hidden">
                 <PaneStaff />
@@ -48,9 +48,9 @@ export default function Home() {
 
           <ResizeHandle />
 
-          {/* Pane2 */}
+          {/* Pane2 — near white */}
           <Panel defaultSize={18} minSize={8}>
-            <div className="flex flex-col h-full min-h-0">
+            <div className="flex flex-col h-full min-h-0" style={{ background: "oklch(0.985 0.004 72)" }}>
               <PaneHeader label="タスク" icon={<CheckSquare className="h-3.5 w-3.5" />} />
               <div className="flex-1 min-h-0 overflow-hidden">
                 <PaneTasks />
@@ -60,9 +60,12 @@ export default function Home() {
 
           <ResizeHandle />
 
-          {/* Pane3 */}
+          {/* Pane3 — gradient: near white → warm terracotta tint */}
           <Panel defaultSize={34} minSize={8}>
-            <div className="flex flex-col h-full min-h-0">
+            <div
+              className="flex flex-col h-full min-h-0"
+              style={{ background: "linear-gradient(to right, oklch(0.985 0.004 72) 0%, oklch(0.952 0.032 58) 100%)" }}
+            >
               <PaneHeader label="実績 / 進捗" icon={<BarChart2 className="h-3.5 w-3.5" />} />
               <div className="flex-1 min-h-0 overflow-hidden">
                 <PaneProgress />
@@ -72,9 +75,9 @@ export default function Home() {
 
           <ResizeHandle />
 
-          {/* Pane4 */}
+          {/* Pane4 — warm ivory */}
           <Panel defaultSize={33} minSize={8}>
-            <div className="flex flex-col h-full min-h-0">
+            <div className="flex flex-col h-full min-h-0" style={{ background: "oklch(0.968 0.010 68)" }}>
               <PaneHeader label="MTG ログ" icon={<Video className="h-3.5 w-3.5" />} />
               <div className="flex-1 min-h-0 overflow-hidden">
                 <PaneMtg />
@@ -116,7 +119,7 @@ export default function Home() {
 
 function PaneHeader({ label, icon }: { label: string; icon: React.ReactNode }) {
   return (
-    <div className="flex items-center gap-2 px-3 py-2.5 border-b bg-muted/20 shrink-0">
+    <div className="flex items-center gap-2 px-3 py-2.5 border-b bg-black/[0.03] shrink-0">
       <span className="text-muted-foreground/60">{icon}</span>
       <span className="text-[10px] font-light tracking-[0.18em] uppercase text-muted-foreground">{label}</span>
     </div>
