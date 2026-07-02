@@ -1,5 +1,7 @@
 "use client"
 
+import { useEffect } from "react"
+import { useAppStore } from "@/lib/store"
 import { MonthSelector } from "@/components/layout/month-selector"
 import { PaneStaff } from "@/components/panes/pane-staff"
 import { PaneTasks } from "@/components/panes/pane-tasks"
@@ -22,6 +24,14 @@ const PANE_TABS = [
 ]
 
 export default function Home() {
+  const { selectedMonth, loadMonthData } = useAppStore()
+
+  // アプリ起動時に現在の月のデータを DB からロード
+  useEffect(() => {
+    loadMonthData(selectedMonth)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   return (
     <div className="h-dvh flex flex-col bg-background">
       {/* ヘッダー */}

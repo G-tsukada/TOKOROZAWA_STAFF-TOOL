@@ -1,0 +1,55 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// タスク（スタッフ×月次のアクション項目）
+model Task {
+  id          String   @id @default(cuid())
+  staffId     String
+  yearMonth   String   // "YYYY-MM"
+  title       String
+  status      String   @default("not_started")
+  memo        String   @default("")
+  advice      String   @default("")
+  createdDate String   // "YYYY-MM-DD"
+  dueDate     String   @default("") // "YYYY-MM-DD" or ""
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([staffId, yearMonth])
+}
+
+// 月次実績（スタッフ×月で一意）
+model PerformanceRecord {
+  id              String   @id @default(cuid())
+  staffId         String
+  yearMonth       String   // "YYYY-MM"
+  sales           Float    @default(0)    // 実績（円）
+  target          Float    @default(0)    // 予算（円）
+  customerCount   Int      @default(0)    // 接客件数実績
+  customerTarget  Int      @default(0)    // 接客件数予算
+  categoryMetrics Json     @default("{}") // { "VP売上": { budget: 0, actual: 0 }, ... }
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([staffId, yearMonth])
+}
+
+// MTGログ（カテゴリ単位の会議記録）
+model MtgLog {
+  id             String   @id @default(cuid())
+  categoryId     String   // "VP", "TEX", etc.
+  yearMonth      String   // "YYYY-MM"
+  meetingDate    String   // "YYYY-MM-DD"
+  content        String   @default("")
+  relatedTaskIds String[] // 関連タスクのID配列
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([categoryId, yearMonth])
+}
