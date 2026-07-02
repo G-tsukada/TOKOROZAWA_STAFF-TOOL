@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { STATUS_LABEL, STATUS_COLOR, TaskStatus } from "@/lib/mock-data"
+import { STATUS_LABEL, STATUS_COLOR, TaskStatus, SELECTABLE_STATUSES } from "@/lib/mock-data"
 import { cn } from "@/lib/utils"
 import { Plus, Trash2, Pencil, Check, X, MessageSquare } from "lucide-react"
 
@@ -160,7 +160,7 @@ export function PaneTasks() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {(Object.keys(STATUS_LABEL) as TaskStatus[]).map((s) => (
+                      {SELECTABLE_STATUSES.map((s) => (
                         <SelectItem key={s} value={s} className="text-xs">
                           {STATUS_LABEL[s]}
                         </SelectItem>

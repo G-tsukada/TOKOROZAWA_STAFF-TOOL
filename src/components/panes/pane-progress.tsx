@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
-import { STATUS_LABEL, STATUS_COLOR, TaskStatus, PerformanceRecord, CategoryMetricItem } from "@/lib/mock-data"
+import { STATUS_LABEL, STATUS_COLOR, TaskStatus, PerformanceRecord, CategoryMetricItem, SELECTABLE_STATUSES } from "@/lib/mock-data"
 import { parseSalesPdf, StaffSalesRow } from "@/lib/pdf-parser"
 import { parseCustomerCsv, CustomerCountRow } from "@/lib/csv-parser"
 import { cn } from "@/lib/utils"
@@ -902,7 +902,7 @@ function formatCountDiff(n: number) {
   return n >= 0 ? `+${n}` : `${n}`
 }
 
-const STATUS_OPTIONS: TaskStatus[] = ["not_started", "in_progress", "completed"]
+const STATUS_OPTIONS = SELECTABLE_STATUSES
 
 function StatusSelector({ value, onChange }: { value: TaskStatus; onChange: (s: TaskStatus) => void }) {
   return (
