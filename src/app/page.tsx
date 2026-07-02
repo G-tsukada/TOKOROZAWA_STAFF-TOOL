@@ -8,6 +8,11 @@ import { PaneMtg } from "@/components/panes/pane-mtg"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Separator } from "@/components/ui/separator"
 import { Users, CheckSquare, BarChart2, Video } from "lucide-react"
+import {
+  Panel,
+  Group as PanelGroup,
+  Separator as PanelResizeHandle,
+} from "react-resizable-panels"
 
 const PANE_TABS = [
   { value: "staff", label: "スタッフ", icon: Users, component: PaneStaff },
@@ -28,40 +33,55 @@ export default function Home() {
         <MonthSelector />
       </header>
 
-      {/* PC: 4ペイン（md以上） */}
-      <div className="hidden md:grid flex-1 min-h-0 overflow-hidden"
-        style={{ gridTemplateColumns: "200px 220px 1fr 1fr" }}>
-        {/* Pane1 */}
-        <div className="border-r flex flex-col min-h-0">
-          <PaneHeader label="スタッフ" icon={<Users className="h-3.5 w-3.5" />} />
-          <div className="flex-1 min-h-0 overflow-hidden">
-            <PaneStaff />
-          </div>
-        </div>
+      {/* PC: 4ペイン リサイザブル（md以上） */}
+      <div className="hidden md:flex flex-1 min-h-0 overflow-hidden">
+        <PanelGroup direction="horizontal" className="flex-1">
+          {/* Pane1 */}
+          <Panel defaultSize={15} minSize={8}>
+            <div className="flex flex-col h-full min-h-0">
+              <PaneHeader label="スタッフ" icon={<Users className="h-3.5 w-3.5" />} />
+              <div className="flex-1 min-h-0 overflow-hidden">
+                <PaneStaff />
+              </div>
+            </div>
+          </Panel>
 
-        {/* Pane2 */}
-        <div className="border-r flex flex-col min-h-0">
-          <PaneHeader label="タスク" icon={<CheckSquare className="h-3.5 w-3.5" />} />
-          <div className="flex-1 min-h-0 overflow-hidden">
-            <PaneTasks />
-          </div>
-        </div>
+          <ResizeHandle />
 
-        {/* Pane3 */}
-        <div className="border-r flex flex-col min-h-0">
-          <PaneHeader label="実績 / 進捗" icon={<BarChart2 className="h-3.5 w-3.5" />} />
-          <div className="flex-1 min-h-0 overflow-hidden">
-            <PaneProgress />
-          </div>
-        </div>
+          {/* Pane2 */}
+          <Panel defaultSize={18} minSize={8}>
+            <div className="flex flex-col h-full min-h-0">
+              <PaneHeader label="タスク" icon={<CheckSquare className="h-3.5 w-3.5" />} />
+              <div className="flex-1 min-h-0 overflow-hidden">
+                <PaneTasks />
+              </div>
+            </div>
+          </Panel>
 
-        {/* Pane4 */}
-        <div className="flex flex-col min-h-0">
-          <PaneHeader label="MTG ログ" icon={<Video className="h-3.5 w-3.5" />} />
-          <div className="flex-1 min-h-0 overflow-hidden">
-            <PaneMtg />
-          </div>
-        </div>
+          <ResizeHandle />
+
+          {/* Pane3 */}
+          <Panel defaultSize={34} minSize={8}>
+            <div className="flex flex-col h-full min-h-0">
+              <PaneHeader label="実績 / 進捗" icon={<BarChart2 className="h-3.5 w-3.5" />} />
+              <div className="flex-1 min-h-0 overflow-hidden">
+                <PaneProgress />
+              </div>
+            </div>
+          </Panel>
+
+          <ResizeHandle />
+
+          {/* Pane4 */}
+          <Panel defaultSize={33} minSize={8}>
+            <div className="flex flex-col h-full min-h-0">
+              <PaneHeader label="MTG ログ" icon={<Video className="h-3.5 w-3.5" />} />
+              <div className="flex-1 min-h-0 overflow-hidden">
+                <PaneMtg />
+              </div>
+            </div>
+          </Panel>
+        </PanelGroup>
       </div>
 
       {/* スマホ: タブ切替（md未満） */}
@@ -100,5 +120,27 @@ function PaneHeader({ label, icon }: { label: string; icon: React.ReactNode }) {
       <span className="text-muted-foreground">{icon}</span>
       <span className="text-xs font-semibold text-muted-foreground">{label}</span>
     </div>
+  )
+}
+
+function ResizeHandle() {
+  return (
+    <PanelResizeHandle
+      style={{
+        width: "6px",
+        flexShrink: 0,
+        background: "hsl(var(--border))",
+        cursor: "col-resize",
+        transition: "background 0.15s",
+      }}
+      onMouseEnter={(e) => {
+        ;(e.currentTarget as HTMLElement).style.background =
+          "hsl(var(--primary) / 0.4)"
+      }}
+      onMouseLeave={(e) => {
+        ;(e.currentTarget as HTMLElement).style.background =
+          "hsl(var(--border))"
+      }}
+    />
   )
 }
