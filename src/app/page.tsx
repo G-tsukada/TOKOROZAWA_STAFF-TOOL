@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { useAppStore } from "@/lib/store"
 import { MonthSelector } from "@/components/layout/month-selector"
 import { PaneStaff } from "@/components/panes/pane-staff"
@@ -9,7 +10,7 @@ import { PaneProgress } from "@/components/panes/pane-progress"
 import { PaneMtg } from "@/components/panes/pane-mtg"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Separator } from "@/components/ui/separator"
-import { Users, CheckSquare, BarChart2, Video } from "lucide-react"
+import { Users, CheckSquare, BarChart2, Video, LogOut } from "lucide-react"
 import {
   Panel,
   Group as PanelGroup,
@@ -25,12 +26,18 @@ const PANE_TABS = [
 
 export default function Home() {
   const { selectedMonth, loadMonthData } = useAppStore()
+  const router = useRouter()
 
   // アプリ起動時に現在の月のデータを DB からロード
   useEffect(() => {
     loadMonthData(selectedMonth)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  const handleLogout = async () => {
+    await fetch("/api/auth/logout", { method: "POST" })
+    router.push("/login")
+  }
 
   return (
     <div className="h-dvh flex flex-col bg-background">
@@ -41,6 +48,15 @@ export default function Home() {
         </h1>
         <Separator orientation="vertical" className="h-5" />
         <MonthSelector />
+        <div className="ml-auto">
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded hover:bg-accent"
+          >
+            <LogOut className="h-3.5 w-3.5" />
+            ログアウト
+          </button>
+        </div>
       </header>
 
       {/* PC: 4ペイン リサイザブル（md以上） */}
