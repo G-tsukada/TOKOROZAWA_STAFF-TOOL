@@ -26,10 +26,10 @@ export interface PdfImportResult {
 // ─── カタカナ姓（PDF 表記）→ staffId マッピング ─────────────────────────────
 // PDF ではスタッフ名が省略されたカタカナで記載される
 const KANA_MAP: Array<{ kana: string; staffId: string; staffName: string }> = [
-  { kana: "テシカワ",   staffId: "s1",    staffName: "勅使川原 純" },
+  { kana: "テシガハラ", staffId: "s1",    staffName: "勅使川原 純" },
   { kana: "スズキ",     staffId: "s2",    staffName: "鈴木 さおり" },
   { kana: "ヨシカワ",   staffId: "s3",    staffName: "吉川 夏子" },
-  { kana: "ミナミザワ", staffId: "s4",    staffName: "南澤 みづき" },
+  { kana: "ミナミサワ", staffId: "s4",    staffName: "南澤 みづき" },
   { kana: "スベ",       staffId: "s5",    staffName: "須部 馨代" },
   { kana: "タカハシ",   staffId: "s6",    staffName: "高橋 佳愛" },
   { kana: "サトウ",     staffId: "s7",    staffName: "佐藤 みわ" },
@@ -39,8 +39,49 @@ const KANA_MAP: Array<{ kana: string; staffId: string; staffName: string }> = [
   { kana: "ツカダ",     staffId: "mgr1",  staffName: "塚田 岳人" },
 ]
 
+// 半角カタカナ → 全角カタカナ 変換
+function toFullWidthKana(str: string): string {
+  // 半角カタカナの濁点・半濁点は前の文字と結合する
+  const HW_KANA: Record<string, string> = {
+    "ｦ":"ヲ","ｧ":"ァ","ｨ":"ィ","ｩ":"ゥ","ｪ":"ェ","ｫ":"ォ","ｬ":"ャ","ｭ":"ュ","ｮ":"ョ",
+    "ｯ":"ッ","ｰ":"ー","ｱ":"ア","ｲ":"イ","ｳ":"ウ","ｴ":"エ","ｵ":"オ","ｶ":"カ","ｷ":"キ",
+    "ｸ":"ク","ｹ":"ケ","ｺ":"コ","ｻ":"サ","ｼ":"シ","ｽ":"ス","ｾ":"セ","ｿ":"ソ","ﾀ":"タ",
+    "ﾁ":"チ","ﾂ":"ツ","ﾃ":"テ","ﾄ":"ト","ﾅ":"ナ","ﾆ":"ニ","ﾇ":"ヌ","ﾈ":"ネ","ﾉ":"ノ",
+    "ﾊ":"ハ","ﾋ":"ヒ","ﾌ":"フ","ﾍ":"ヘ","ﾎ":"ホ","ﾏ":"マ","ﾐ":"ミ","ﾑ":"ム","ﾒ":"メ",
+    "ﾓ":"モ","ﾔ":"ヤ","ﾕ":"ユ","ﾖ":"ヨ","ﾗ":"ラ","ﾘ":"リ","ﾙ":"ル","ﾚ":"レ","ﾛ":"ロ",
+    "ﾜ":"ワ","ﾝ":"ン","ﾞ":"゛","ﾟ":"゜",
+  }
+  let result = ""
+  for (let i = 0; i < str.length; i++) {
+    const c = str[i]
+    const next = str[i + 1]
+    const fw = HW_KANA[c]
+    if (fw) {
+      if (next === "ﾞ") {
+        const voiced: Record<string, string> = {
+          "カ":"ガ","キ":"ギ","ク":"グ","ケ":"ゲ","コ":"ゴ","サ":"ザ","シ":"ジ","ス":"ズ",
+          "セ":"ゼ","ソ":"ゾ","タ":"ダ","チ":"ヂ","ツ":"ヅ","テ":"デ","ト":"ド","ハ":"バ",
+          "ヒ":"ビ","フ":"ブ","ヘ":"ベ","ホ":"ボ","ウ":"ヴ",
+        }
+        result += voiced[fw] ?? fw + "゛"
+        i++
+      } else if (next === "ﾟ") {
+        const pvoiced: Record<string, string> = { "ハ":"パ","ヒ":"ピ","フ":"プ","ヘ":"ペ","ホ":"ポ" }
+        result += pvoiced[fw] ?? fw + "゜"
+        i++
+      } else {
+        result += fw
+      }
+    } else {
+      result += c
+    }
+  }
+  return result
+}
+
 export function matchStaff(rawName: string): { staffId: string; staffName: string } | null {
-  const normalized = rawName.replace(/\s+/g, "")
+  // 半角→全角変換後にスペース除去して照合
+  const normalized = toFullWidthKana(rawName).replace(/\s+/g, "")
   for (const entry of KANA_MAP) {
     if (normalized.startsWith(entry.kana) || normalized.includes(entry.kana)) {
       return { staffId: entry.staffId, staffName: entry.staffName }
@@ -54,11 +95,14 @@ export async function parseSalesPdf(file: File): Promise<PdfImportResult> {
   try {
     // SSR を避けるためダイナミックインポート
     const pdfjsLib = await import("pdfjs-dist")
-    pdfjsLib.GlobalWorkerOptions.workerSrc =
-      `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`
+    pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs"
 
     const buffer = await file.arrayBuffer()
-    const pdf = await pdfjsLib.getDocument({ data: buffer }).promise
+    const pdf = await pdfjsLib.getDocument({
+      data: buffer,
+      cMapUrl: "/cmaps/",
+      cMapPacked: true,
+    }).promise
 
     // 全ページのテキストアイテムを (x, y, text) で収集
     type Item = { x: number; y: number; str: string }
@@ -74,10 +118,10 @@ export async function parseSalesPdf(file: File): Promise<PdfImportResult> {
       }
     }
 
-    // ── y座標でグループ化（3pt 単位で丸めることで同一行を束ねる） ──────────
+    // ── y座標でグループ化（8pt 単位で丸めることで同一行を束ねる） ──────────
     const rowMap = new Map<number, Item[]>()
     for (const item of allItems) {
-      const yKey = Math.round(item.y / 3) * 3
+      const yKey = Math.round(item.y / 8) * 8
       if (!rowMap.has(yKey)) rowMap.set(yKey, [])
       rowMap.get(yKey)!.push(item)
     }
@@ -96,32 +140,41 @@ export async function parseSalesPdf(file: File): Promise<PdfImportResult> {
     }
 
     // ── スタッフ行の抽出 ────────────────────────────────────────────────────
-    // 判定条件: 行の先頭トークンがカタカナ文字列（姓+名）
-    const KATAKANA_RE = /^[ァ-ヺー]+$/
+    // 判定条件: 先頭の「| 」セパレータをスキップした後のトークンがカタカナ
+    // ※ 名前トークン内にスペースが含まれる場合もある（例: "ﾖｼｶﾜ ﾅ"）
+    const KATAKANA_RE = /^[ァ-ヺーｦ-ﾟ\s]+$/
+    const SEP_RE = /^[\s|│]+$/
     const NUM_RE = /^[\d,]+$/
 
     const rows: StaffSalesRow[] = []
     const seenNames = new Set<string>()
 
     for (const row of sortedRows) {
-      if (row.length < 4) continue
+      // 先頭のセパレータトークン（" | " など）をスキップ
+      let startIdx = 0
+      while (startIdx < row.length && SEP_RE.test(row[startIdx])) {
+        startIdx++
+      }
+      const trimmedRow = row.slice(startIdx)
 
-      // 先頭 1〜2 トークンがカタカナかどうかで「スタッフ名行」を判定
-      const firstKana = KATAKANA_RE.test(row[0])
+      if (trimmedRow.length < 2) continue
+
+      // 先頭トークンがカタカナ（スペース混在可）かどうかで「スタッフ名行」を判定
+      const firstKana = KATAKANA_RE.test(trimmedRow[0])
       if (!firstKana) continue
 
-      // 氏名部分を連結（カタカナが続く限り）
+      // 氏名部分を連結（カタカナトークンが続く限り）
       let nameTokenCount = 1
-      while (nameTokenCount < row.length && KATAKANA_RE.test(row[nameTokenCount])) {
+      while (nameTokenCount < trimmedRow.length && KATAKANA_RE.test(trimmedRow[nameTokenCount])) {
         nameTokenCount++
       }
-      const rawName = row.slice(0, nameTokenCount).join(" ")
+      const rawName = toFullWidthKana(trimmedRow.slice(0, nameTokenCount).join(" ")).trim()
 
       // 同じ名前はスキップ（粗利行 or 重複）
       if (seenNames.has(rawName)) continue
 
       // 残りのトークンから数値を抽出
-      const rest = row.slice(nameTokenCount)
+      const rest = trimmedRow.slice(nameTokenCount)
       const bigNums: number[] = []
       const pctNums: number[] = []
 

@@ -12,8 +12,9 @@ import { Badge } from "@/components/ui/badge"
 import { STATUS_LABEL, STATUS_COLOR, TaskStatus, PerformanceRecord, CategoryMetricItem, SELECTABLE_STATUSES, Task, Staff } from "@/lib/mock-data"
 import { parseSalesPdf, StaffSalesRow } from "@/lib/pdf-parser"
 import { parseCustomerCsv, CustomerCountRow } from "@/lib/csv-parser"
+import { parseTextInput } from "@/lib/text-parser"
 import { cn } from "@/lib/utils"
-import { Lock, ChevronDown, Pencil, Plus, Trash2, Check, X, Upload, FileText, AlertCircle } from "lucide-react"
+import { Lock, ChevronDown, Pencil, Plus, Trash2, Check, X, Upload, FileText, AlertCircle, ClipboardPaste } from "lucide-react"
 
 const MANAGER_PIN = "1234"
 
@@ -33,12 +34,18 @@ export function PaneProgress() {
   const [pinDialogOpen, setPinDialogOpen] = useState(false)
   const [editPerfOpen, setEditPerfOpen] = useState(false)
 
+  // ── テキスト貼り付けダイアログ ──
+  const [pasteDialogOpen, setPasteDialogOpen] = useState(false)
+  const [pasteText, setPasteText] = useState("")
+  const [pasteYearMonth, setPasteYearMonth] = useState("")
+
   // ── ファイルインポート（PDF / CSV 共通） ──
   type ImportFileType = "pdf" | "csv"
   const [isDragOver, setIsDragOver] = useState(false)
   const [isParsing, setIsParsing] = useState(false)
   const [importFileType, setImportFileType] = useState<ImportFileType | null>(null)
   const [importYearMonth, setImportYearMonth] = useState<string | null>(null)
+  const [manualYearMonth, setManualYearMonth] = useState("")
   const [importError, setImportError] = useState<string | null>(null)
   const [importDialogOpen, setImportDialogOpen] = useState(false)
   // PDF 用
@@ -52,6 +59,7 @@ export function PaneProgress() {
   const openImportDialog = (type: ImportFileType, ym: string | null, error?: string) => {
     setImportFileType(type)
     setImportYearMonth(ym)
+    setManualYearMonth(ym ?? selectedMonth)
     setImportError(error ?? null)
     setImportDialogOpen(true)
   }
@@ -110,15 +118,16 @@ export function PaneProgress() {
 
   // PDF 適用：受注実績・目標を登録（接客件数は既存値を保持）
   const handlePdfApply = () => {
-    if (!pdfRows || !importYearMonth) return
+    const ym = importYearMonth ?? manualYearMonth
+    if (!pdfRows || !ym) return
     for (const row of pdfRows) {
       if (!selectedPdfRows.has(row.rawName) || !row.matchedStaffId) continue
       const existing = performance.find(
-        (p) => p.staffId === row.matchedStaffId && p.yearMonth === importYearMonth
+        (p) => p.staffId === row.matchedStaffId && p.yearMonth === ym
       )
       upsertPerformance({
         staffId: row.matchedStaffId,
-        yearMonth: importYearMonth,
+        yearMonth: ym,
         sales: row.actual,
         target: row.target,
         customerCount: existing?.customerCount ?? 0,
@@ -150,6 +159,23 @@ export function PaneProgress() {
     }
     setImportDialogOpen(false)
     setCsvRows(null)
+  }
+
+  // テキスト貼り付けを解析して PDF 確認ダイアログを流用
+  const handlePasteSubmit = () => {
+    const result = parseTextInput(pasteText, pasteYearMonth || undefined)
+    setPasteDialogOpen(false)
+    setPasteText("")
+    setPasteYearMonth("")
+    if (result.rows.length === 0) {
+      openImportDialog("pdf", result.yearMonth, "スタッフ名が検出できませんでした。形式を確認してください。")
+      return
+    }
+    setPdfRows(result.rows)
+    setSelectedPdfRows(
+      new Set(result.rows.filter((r) => r.matchedStaffId !== null).map((r) => r.rawName))
+    )
+    openImportDialog("pdf", result.yearMonth)
   }
 
   const selectedStaff = staff.find((s) => s.id === selectedStaffId)
@@ -235,6 +261,17 @@ export function PaneProgress() {
               </div>
             )}
           </div>
+
+          {/* ── テキスト貼り付けボタン ── */}
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full text-xs gap-1.5 h-7"
+            onClick={() => setPasteDialogOpen(true)}
+          >
+            <ClipboardPaste className="h-3.5 w-3.5" />
+            テキスト貼り付けで取込
+          </Button>
 
           {/* ── 店長ビュー：ガントチャート ── */}
           {isManager && (
@@ -479,6 +516,60 @@ export function PaneProgress() {
         />
       )}
 
+      {/* ── テキスト貼り付けダイアログ ── */}
+      <Dialog open={pasteDialogOpen} onOpenChange={setPasteDialogOpen}>
+        <DialogContent className="max-w-lg max-h-[90dvh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ClipboardPaste className="h-4 w-4" />
+              テキスト貼り付けで取込（受注実績）
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="rounded-md bg-muted/50 p-3 text-xs text-muted-foreground space-y-1.5">
+              <p className="font-medium text-foreground">使い方</p>
+              <p>① PDFをビューア（Acrobat / Edge等）で開き Ctrl+A → Ctrl+C でコピー</p>
+              <p>② 下のテキストエリアに貼り付け（Ctrl+V）</p>
+              <p className="pt-1 font-medium text-foreground">または シンプル形式で手入力：</p>
+              <pre className="bg-background rounded p-2 text-[10px]">{`スズキ, 750000, 800000\nタカハシ, 1200000, 1500000`}</pre>
+              <p className="text-[10px]">（名前, 実績円, 目標円）</p>
+            </div>
+
+            <div>
+              <label className="text-xs text-muted-foreground">
+                対象年月（自動検出されない場合に入力）
+              </label>
+              <Input
+                className="mt-1 h-8 text-sm"
+                placeholder="例: 2026-06"
+                value={pasteYearMonth}
+                onChange={(e) => setPasteYearMonth(e.target.value)}
+              />
+            </div>
+
+            <div>
+              <label className="text-xs text-muted-foreground">テキスト</label>
+              <Textarea
+                className="mt-1 text-xs min-h-[180px] font-mono resize-y"
+                placeholder="PDFからコピーしたテキスト、またはシンプル形式を貼り付けてください"
+                value={pasteText}
+                onChange={(e) => setPasteText(e.target.value)}
+              />
+            </div>
+
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" className="flex-1" onClick={() => setPasteDialogOpen(false)}>
+                キャンセル
+              </Button>
+              <Button size="sm" className="flex-1" disabled={!pasteText.trim()} onClick={handlePasteSubmit}>
+                <Check className="h-3.5 w-3.5 mr-1" />
+                解析する
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* ── インポート確認ダイアログ（PDF / CSV 共通） ── */}
       <Dialog open={importDialogOpen} onOpenChange={setImportDialogOpen}>
         <DialogContent className="max-w-lg max-h-[90dvh] overflow-y-auto">
@@ -497,13 +588,32 @@ export function PaneProgress() {
           ) : importFileType === "pdf" && pdfRows ? (
             /* ── PDF（受注実績）確認 ── */
             <div className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                対象月: <span className="font-medium text-foreground">{importYearMonth ?? "不明"}</span>
-                　/ 検出: <span className="font-medium text-foreground">{pdfRows.length} 件</span>
-                　/ マッチ: <span className="font-medium text-green-600">
-                  {pdfRows.filter((r) => r.matchedStaffId).length} 件
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                <span className="text-sm text-muted-foreground">
+                  対象月:
                 </span>
-              </p>
+                {importYearMonth ? (
+                  <span className="text-sm font-medium text-foreground">{importYearMonth}</span>
+                ) : (
+                  <Input
+                    className="h-7 w-32 text-sm"
+                    placeholder="例: 2026-06"
+                    value={manualYearMonth}
+                    onChange={(e) => setManualYearMonth(e.target.value)}
+                  />
+                )}
+                <span className="text-sm text-muted-foreground">
+                  検出: <span className="font-medium text-foreground">{pdfRows.length} 件</span>
+                  　/ マッチ: <span className="font-medium text-green-600">
+                    {pdfRows.filter((r) => r.matchedStaffId).length} 件
+                  </span>
+                </span>
+              </div>
+              {!importYearMonth && (
+                <p className="text-xs text-amber-600 bg-amber-50 rounded px-2 py-1.5">
+                  対象月を PDF から読み取れませんでした。適用する年月を入力してください。
+                </p>
+              )}
               <p className="text-xs text-muted-foreground">
                 受注実績・目標を登録します。接客件数の既存データは保持されます。
               </p>
@@ -554,7 +664,12 @@ export function PaneProgress() {
                 <Button variant="outline" size="sm" className="flex-1" onClick={() => setImportDialogOpen(false)}>
                   キャンセル
                 </Button>
-                <Button size="sm" className="flex-1" disabled={selectedPdfRows.size === 0} onClick={handlePdfApply}>
+                <Button
+                  size="sm"
+                  className="flex-1"
+                  disabled={selectedPdfRows.size === 0 || !(importYearMonth ?? manualYearMonth)}
+                  onClick={handlePdfApply}
+                >
                   <Check className="h-3.5 w-3.5 mr-1" />
                   {selectedPdfRows.size} 件を適用
                 </Button>
