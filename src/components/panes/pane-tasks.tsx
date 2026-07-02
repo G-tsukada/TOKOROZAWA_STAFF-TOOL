@@ -13,9 +13,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { STATUS_LABEL, STATUS_COLOR, TaskStatus } from "@/lib/mock-data"
+import { STATUS_LABEL, STATUS_COLOR, TaskStatus, SELECTABLE_STATUSES } from "@/lib/mock-data"
 import { cn } from "@/lib/utils"
-import { Plus, Trash2, Pencil, Check, X } from "lucide-react"
+import { Plus, Trash2, Pencil, Check, X, MessageSquare } from "lucide-react"
 
 const today = new Date().toISOString().slice(0, 10)
 
@@ -29,7 +29,7 @@ function DateLabel({ label, value }: { label: string; value: string }) {
 }
 
 export function PaneTasks() {
-  const { selectedStaffId, selectedMonth, tasks, addTask, updateTask, deleteTask, staff } =
+  const { selectedStaffId, selectedMonth, tasks, addTask, updateTask, deleteTask, staff, mtgLogs } =
     useAppStore()
 
   const [newTitle, setNewTitle] = useState("")
@@ -141,7 +141,7 @@ export function PaneTasks() {
               タスクがありません
             </p>
           ) : (
-            filteredTasks.map((task) =>
+            filteredTasks.map((task) => (
               editingId === task.id && editForm ? (
                 /* ── 編集モード ── */
                 <div key={task.id} className="rounded-lg border p-2.5 bg-card space-y-2">
@@ -160,7 +160,7 @@ export function PaneTasks() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {(Object.keys(STATUS_LABEL) as TaskStatus[]).map((s) => (
+                      {SELECTABLE_STATUSES.map((s) => (
                         <SelectItem key={s} value={s} className="text-xs">
                           {STATUS_LABEL[s]}
                         </SelectItem>
@@ -211,50 +211,89 @@ export function PaneTasks() {
                 </div>
               ) : (
                 /* ── 表示モード ── */
-                <div
+                <TaskCard
                   key={task.id}
-                  className="flex items-start gap-2 rounded-lg border p-2.5 bg-card"
-                >
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium leading-snug">{task.title}</p>
-                    <div className="flex flex-wrap items-center gap-2 mt-1.5">
-                      <Badge
-                        className={cn(
-                          "text-[10px] px-1.5 py-0",
-                          STATUS_COLOR[task.status as TaskStatus]
-                        )}
-                        variant="secondary"
-                      >
-                        {STATUS_LABEL[task.status as TaskStatus]}
-                      </Badge>
-                      <DateLabel label="入力" value={task.createdDate} />
-                      <DateLabel label="完了予定" value={task.dueDate} />
-                    </div>
-                  </div>
-                  <div className="flex gap-0.5 shrink-0">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6 text-muted-foreground hover:text-foreground"
-                      onClick={() => startEdit(task)}
-                    >
-                      <Pencil className="h-3.5 w-3.5" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6 text-muted-foreground hover:text-destructive"
-                      onClick={() => deleteTask(task.id)}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                </div>
-              )
-            )
+                  task={task}
+                  linkedLogCount={mtgLogs.filter((l) => l.relatedTaskIds.includes(task.id)).length}
+                  linkedLogDates={mtgLogs
+                    .filter((l) => l.relatedTaskIds.includes(task.id))
+                    .map((l) =>
+                      new Date(l.meetingDate).toLocaleDateString("ja-JP", {
+                        month: "short",
+                        day: "numeric",
+                      })
+                    )}
+                  onEdit={() => startEdit(task)}
+                  onDelete={() => deleteTask(task.id)}
+                />
+            )))
           )}
         </div>
       </ScrollArea>
+    </div>
+  )
+}
+
+// ── タスクカード（表示モード） ──────────────────────────────────────────────
+import { Task } from "@/lib/mock-data"
+
+function TaskCard({
+  task,
+  linkedLogCount,
+  linkedLogDates,
+  onEdit,
+  onDelete,
+}: {
+  task: Task
+  linkedLogCount: number
+  linkedLogDates: string[]
+  onEdit: () => void
+  onDelete: () => void
+}) {
+  return (
+    <div className="flex items-start gap-2 rounded-lg border p-2.5 bg-card">
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium leading-snug">{task.title}</p>
+        <div className="flex flex-wrap items-center gap-2 mt-1.5">
+          <Badge
+            className={cn("text-[10px] px-1.5 py-0", STATUS_COLOR[task.status as TaskStatus])}
+            variant="secondary"
+          >
+            {STATUS_LABEL[task.status as TaskStatus]}
+          </Badge>
+          <DateLabel label="入力" value={task.createdDate} />
+          <DateLabel label="完了予定" value={task.dueDate} />
+        </div>
+        {linkedLogCount > 0 && (
+          <div className="flex items-center gap-1 mt-1.5 rounded-md bg-primary/5 px-1.5 py-0.5 w-fit">
+            <MessageSquare className="h-2.5 w-2.5 text-primary/70" />
+            <span className="text-[10px] text-primary font-medium">
+              MTG {linkedLogCount}件
+            </span>
+            <span className="text-[10px] text-muted-foreground">
+              {linkedLogDates.join("・")}
+            </span>
+          </div>
+        )}
+      </div>
+      <div className="flex gap-0.5 shrink-0">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-6 w-6 text-muted-foreground hover:text-foreground"
+          onClick={onEdit}
+        >
+          <Pencil className="h-3.5 w-3.5" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-6 w-6 text-muted-foreground hover:text-destructive"
+          onClick={onDelete}
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </Button>
+      </div>
     </div>
   )
 }

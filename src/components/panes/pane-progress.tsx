@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
-import { STATUS_LABEL, STATUS_COLOR, TaskStatus, PerformanceRecord, CategoryMetricItem } from "@/lib/mock-data"
+import { STATUS_LABEL, STATUS_COLOR, TaskStatus, PerformanceRecord, CategoryMetricItem, SELECTABLE_STATUSES, Task, Staff } from "@/lib/mock-data"
 import { parseSalesPdf, StaffSalesRow } from "@/lib/pdf-parser"
 import { parseCustomerCsv, CustomerCountRow } from "@/lib/csv-parser"
 import { cn } from "@/lib/utils"
@@ -185,6 +185,8 @@ export function PaneProgress() {
     )
   }
 
+  const isManager = selectedStaffId === "mgr1"
+
   const achievementRate = perf && perf.target ? Math.round((perf.sales / perf.target) * 100) : null
   const salesDiff = perf ? perf.sales - perf.target : null
   const customerRate = perf && perf.customerTarget ? Math.round((perf.customerCount / perf.customerTarget) * 100) : null
@@ -234,8 +236,13 @@ export function PaneProgress() {
             )}
           </div>
 
-          {/* ── 実績サマリー ── */}
-          <section>
+          {/* ── 店長ビュー：ガントチャート ── */}
+          {isManager && (
+            <GanttSection yearMonth={selectedMonth} allTasks={tasks} allStaff={staff} />
+          )}
+
+          {/* ── 通常スタッフビュー ── */}
+          {!isManager && <><section>
             <div className="flex items-center justify-between mb-2">
               <SectionLabel>実績サマリー — {selectedStaff?.name}</SectionLabel>
               <Button
@@ -434,7 +441,7 @@ export function PaneProgress() {
                 マネージャーモードを終了
               </Button>
             )}
-          </section>
+          </section></>}
         </div>
       </ScrollArea>
 
@@ -902,7 +909,7 @@ function formatCountDiff(n: number) {
   return n >= 0 ? `+${n}` : `${n}`
 }
 
-const STATUS_OPTIONS: TaskStatus[] = ["not_started", "in_progress", "completed"]
+const STATUS_OPTIONS = SELECTABLE_STATUSES
 
 function StatusSelector({ value, onChange }: { value: TaskStatus; onChange: (s: TaskStatus) => void }) {
   return (
@@ -921,5 +928,182 @@ function StatusSelector({ value, onChange }: { value: TaskStatus; onChange: (s: 
       </select>
       <ChevronDown className="absolute right-1 top-1/2 -translate-y-1/2 h-3 w-3 pointer-events-none opacity-60" />
     </div>
+  )
+}
+
+// ── ガントチャート（店長専用） ────────────────────────────────────────────────
+function GanttSection({
+  yearMonth,
+  allTasks,
+  allStaff,
+}: {
+  yearMonth: string
+  allTasks: Task[]
+  allStaff: Staff[]
+}) {
+  const [year, month] = yearMonth.split("-").map(Number)
+  const daysInMonth = new Date(year, month, 0).getDate()
+  const todayDay = (() => {
+    const t = new Date()
+    return t.getFullYear() === year && t.getMonth() + 1 === month ? t.getDate() : null
+  })()
+
+  const parseDay = (dateStr: string): number => parseInt(dateStr.split("-")[2], 10)
+
+  // スタッフ（店長以外）× タスク をグループ化、タスクが1件以上あるスタッフのみ
+  const groups = allStaff
+    .filter((s) => s.team !== "MGR")
+    .map((s) => ({
+      staff: s,
+      tasks: allTasks.filter((t) => t.staffId === s.id && t.yearMonth === yearMonth),
+    }))
+    .filter((g) => g.tasks.length > 0)
+
+  // タスクバーの位置・幅を計算（月内にクランプ）
+  const getBarStyle = (task: Task): { left: string; width: string } | null => {
+    if (!task.createdDate) return null
+    const startMonth = task.createdDate.slice(0, 7)
+    const endMonth = task.dueDate?.slice(0, 7) ?? ""
+
+    let startDay = startMonth === yearMonth ? parseDay(task.createdDate) : 1
+    let endDay = task.dueDate
+      ? endMonth === yearMonth ? parseDay(task.dueDate) : daysInMonth
+      : startDay + 1
+
+    startDay = Math.max(1, Math.min(startDay, daysInMonth))
+    endDay = Math.max(startDay, Math.min(endDay, daysInMonth))
+
+    const left = ((startDay - 1) / daysInMonth) * 100
+    const width = Math.max(((endDay - startDay + 1) / daysInMonth) * 100, 2)
+    return { left: `${left.toFixed(1)}%`, width: `${width.toFixed(1)}%` }
+  }
+
+  const barColor: Record<TaskStatus, string> = {
+    not_started: "bg-gray-300 text-gray-700",
+    in_progress: "bg-blue-400 text-white",
+    completed: "bg-green-400 text-white",
+    stalled: "bg-red-400 text-white",
+  }
+
+  // 日付ティック（1, 5, 10, 15, 20, 25, 最終日）
+  const ticks = [1, 5, 10, 15, 20, 25, daysInMonth].filter(
+    (d, i, arr) => arr.indexOf(d) === i && d <= daysInMonth
+  )
+
+  return (
+    <section className="space-y-3">
+      <SectionLabel>全スタッフ タスク進捗 — {yearMonth}</SectionLabel>
+
+      {groups.length === 0 ? (
+        <p className="text-sm text-muted-foreground text-center py-6">
+          タスクがありません
+        </p>
+      ) : (
+        <div className="rounded-xl border bg-card overflow-hidden">
+          {/* 日付ヘッダー */}
+          <div className="flex border-b bg-muted/40 px-2 py-1.5">
+            <div className="w-20 shrink-0" />
+            <div className="flex-1 relative h-4">
+              {ticks.map((day) => (
+                <span
+                  key={day}
+                  className="absolute text-[9px] text-muted-foreground -translate-x-1/2 select-none"
+                  style={{ left: `${((day - 1) / daysInMonth) * 100}%` }}
+                >
+                  {day}
+                </span>
+              ))}
+              {/* 今日マーカー */}
+              {todayDay !== null && (
+                <div
+                  className="absolute top-0 bottom-0 w-px bg-primary/50"
+                  style={{ left: `${((todayDay - 0.5) / daysInMonth) * 100}%` }}
+                />
+              )}
+            </div>
+          </div>
+
+          {/* スタッフ行 */}
+          {groups.map(({ staff, tasks }) => (
+            <div key={staff.id} className="border-b last:border-0">
+              <div className="flex px-2 py-2 hover:bg-muted/20 transition-colors">
+                {/* スタッフ名列 */}
+                <div className="w-20 shrink-0 pr-2">
+                  <p className="text-[10px] font-semibold leading-tight truncate">
+                    {staff.name.split(" ")[0]}
+                  </p>
+                  <p className="text-[9px] text-muted-foreground">{staff.team}</p>
+                </div>
+
+                {/* タスクバー列 */}
+                <div className="flex-1 relative space-y-1">
+                  {/* グリッド線 */}
+                  <div className="absolute inset-0 pointer-events-none">
+                    {ticks.map((day) => (
+                      <div
+                        key={day}
+                        className="absolute top-0 bottom-0 w-px bg-border/40"
+                        style={{ left: `${((day - 1) / daysInMonth) * 100}%` }}
+                      />
+                    ))}
+                    {todayDay !== null && (
+                      <div
+                        className="absolute top-0 bottom-0 w-px bg-primary/30"
+                        style={{ left: `${((todayDay - 0.5) / daysInMonth) * 100}%` }}
+                      />
+                    )}
+                  </div>
+
+                  {tasks.map((task) => {
+                    const style = getBarStyle(task)
+                    const status = task.status as TaskStatus
+                    return (
+                      <div key={task.id} className="relative h-5">
+                        {style ? (
+                          <div
+                            className={cn(
+                              "absolute inset-y-0.5 rounded-sm flex items-center px-1.5 overflow-hidden cursor-default",
+                              barColor[status]
+                            )}
+                            style={style}
+                            title={`${task.title}（${STATUS_LABEL[status]}${task.dueDate ? "・完了予定 " + task.dueDate : ""}）`}
+                          >
+                            <span className="text-[9px] truncate leading-none whitespace-nowrap">
+                              {task.title}
+                            </span>
+                          </div>
+                        ) : (
+                          <div
+                            className="absolute top-1.5 h-2 w-2 rounded-full bg-gray-300"
+                            style={{ left: task.createdDate ? `${((parseDay(task.createdDate) - 1) / daysInMonth) * 100}%` : "0%" }}
+                            title={task.title}
+                          />
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* 凡例 */}
+      <div className="flex flex-wrap gap-3 px-1">
+        {SELECTABLE_STATUSES.map((s) => (
+          <div key={s} className="flex items-center gap-1">
+            <div className={cn("w-3 h-2 rounded-sm", barColor[s].split(" ")[0])} />
+            <span className="text-[10px] text-muted-foreground">{STATUS_LABEL[s]}</span>
+          </div>
+        ))}
+        {todayDay !== null && (
+          <div className="flex items-center gap-1">
+            <div className="w-px h-3 bg-primary/50" />
+            <span className="text-[10px] text-muted-foreground">今日</span>
+          </div>
+        )}
+      </div>
+    </section>
   )
 }

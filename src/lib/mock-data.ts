@@ -170,6 +170,9 @@ export const STATUS_LABEL: Record<TaskStatus, string> = {
   stalled: "停滞",
 }
 
+// 選択可能なステータス（停滞は選択不可・表示のみ）
+export const SELECTABLE_STATUSES: TaskStatus[] = ["not_started", "in_progress", "completed"]
+
 export const STATUS_COLOR: Record<TaskStatus, string> = {
   not_started: "bg-gray-100 text-gray-700",
   in_progress: "bg-blue-100 text-blue-700",
